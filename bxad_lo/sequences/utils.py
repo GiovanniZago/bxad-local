@@ -22,13 +22,9 @@ def orbit_aggregator(data: ak.Array):
     """
     group by orbit (gpo)
     """
-    data_gpo = ak.zip(
-        {
-            "orbit": data_uf.orbit[:,0], 
-            "bx": data_uf.bx
-        }, 
-        depth_limit=1
-    )
+    zip_dict = {key: data_uf[key] for key in data_uf.fields if key != "orbit"}
+    zip_dict["orbit"] = data_uf["orbit"][:,0]
+    data_gpo = ak.zip(zip_dict, depth_limit=1)
 
     return data_gpo
 

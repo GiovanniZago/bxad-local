@@ -82,6 +82,7 @@ if __name__ == "__main__":
     print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
 
     data_gpo = sequences.orbit_aggregator(data_cbx_stubs)
+    seq_tot_counts = {}
     
     # 2-sequences
     data_seq = sequences.get_bx_sequences(data_gpo, length=2)
@@ -89,6 +90,7 @@ if __name__ == "__main__":
     
     num_seq_per_orbit = ak.num(data_seq.seq, axis=1)
     num_seq_mulcounts = processors.get_multiplicity_counts(num_seq_per_orbit)
+    seq_tot_counts["seq2"] = sum([key * num_seq_mulcounts[key] for key in num_seq_mulcounts])
     print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
 
     plot_options = {
@@ -106,6 +108,7 @@ if __name__ == "__main__":
     
     num_seq_per_orbit = ak.num(data_seq.seq, axis=1)
     num_seq_mulcounts = processors.get_multiplicity_counts(num_seq_per_orbit)
+    seq_tot_counts["seq3"] = sum([key * num_seq_mulcounts[key] for key in num_seq_mulcounts])
     print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
 
     plot_options = {
@@ -123,6 +126,7 @@ if __name__ == "__main__":
     
     num_seq_per_orbit = ak.num(data_seq.seq, axis=1)
     num_seq_mulcounts = processors.get_multiplicity_counts(num_seq_per_orbit)
+    seq_tot_counts["seq4"] = sum([key * num_seq_mulcounts[key] for key in num_seq_mulcounts])
     print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
 
     plot_options = {
@@ -133,4 +137,32 @@ if __name__ == "__main__":
         "name": "4seq_mulcounts_cb_stubs"
     }
     plots.plot_multiplicity_counts(num_seq_mulcounts, **plot_options)
+
+    # 5-sequences
+    data_seq = sequences.get_bx_sequences(data_gpo, length=5)
+    print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
+    
+    num_seq_per_orbit = ak.num(data_seq.seq, axis=1)
+    num_seq_mulcounts = processors.get_multiplicity_counts(num_seq_per_orbit)
+    seq_tot_counts["seq5"] = sum([key * num_seq_mulcounts[key] for key in num_seq_mulcounts])
+    print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
+
+    plot_options = {
+        "kind": "step",
+        "xlabel": "5-sequence multiplicity",
+        "ylabel": "Orbit counts",
+        "yscale": "log", 
+        "name": "5seq_mulcounts_cb_stubs"
+    }
+    plots.plot_multiplicity_counts(num_seq_mulcounts, **plot_options)
+
+    # plot total multiplicity per sequence length
+    plot_options = {
+        "kind": "bar",
+        "xlabel": "sequence length",
+        "ylabel": "Counts",
+        "yscale": "log", 
+        "name": "seq_tot_counts_cb_stubs"
+    }
+    plots.plot_multiplicity_counts(seq_tot_counts, **plot_options)
     
