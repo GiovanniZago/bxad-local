@@ -34,7 +34,7 @@ if __name__ == "__main__":
             "wheel": "L1BMTFStub_wheel", 
             "sector": "L1BMTFStub_sector", 
             "station": "L1BMTFStub_station"
-            }
+        }
     )
     print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
 
@@ -92,7 +92,6 @@ if __name__ == "__main__":
     """ 
     Flatten sequences per orbit
     """
-    bx = ak.to_list(data_gpo.bx)
     seq_flatten = ak.to_list(ak.flatten(seq_array, axis=2))
 
     """
@@ -120,17 +119,46 @@ if __name__ == "__main__":
     whole array in order to keep data only from these
     bxs
     """
-    bx_seq_mask = [[True if el in seqls else False for el in bxls] for bxls, seqls in zip(bx, seq_flatten)]
-    bx_seq_mask_array = ak.Array(bx_seq_mask)
-    data_gpo_sliceable = data_gpo_sliceable[bx_seq_mask_array]
+    bx = ak.to_list(data_gpo.bx)
+    seq_flatten_bx_counts = [{x: seqls.count(x) for x in seqls} for seqls in seq_flatten]
+    bx_counts = [{x: bxls.count(x) for x in bxls} for bxls in bx]
 
-    """
-    Now add the index array
-    """
-    data_gpo_sliceable = ak.with_field(data_gpo_sliceable, seq_index_array, where="seq_index")
+    selected_bx_with_reps = [
+        {
+            k: y[k] if x[k] != y[k] else x[k] for k in x.keys() & y.keys() 
+        }
+        for x, y in zip(bx_counts, seq_flatten_bx_counts)
+    ]
 
-    print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB") 
+    print(selected_bx_with_reps[2])
 
-    for field in data_gpo_sliceable.fields:
-        print(f"{field}: ", data_gpo_sliceable[2][field])
+    data_gpo_dict = data_gpo.to_list()
+
+    for orbit_idx, (sbr_dict, record_dict) in enumerate(zip(selected_bx_with_reps, data_gpo_dict)):
+        for k in record_dict:
+            if k not in ["bx", "orbit"]:
+                record_dict[k] = [
+                    record_dict[k][i]
+                    for i, val in enumerate(record_dict["bx"])
+                    if val in sbr_dict
+                    for _ in range(sbr_dict[val])
+                ]
+
+        record_dict["bx"] = [el for el in record_dict["bx"] & sbr_dict.keys() for _ in range(sbr_dict[el])]
+    
+    print(data_gpo_dict[2])
+
+    # bx_seq_mask = [[True if el in seqls else False for el in bxls] for bxls, seqls in zip(bx_with_reps, seq_flatten)]
+    # bx_seq_mask_array = ak.Array(bx_seq_mask)
+    # data_gpo_sliceable = data_gpo_sliceable[bx_seq_mask_array]
+
+    # """
+    # Now add the index array
+    # """
+    # data_gpo_sliceable = ak.with_field(data_gpo_sliceable, seq_index_array, where="seq_index")
+
+    # print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB") 
+
+    # for field in data_gpo_sliceable.fields:
+    #     print(f"{field}: ", data_gpo_sliceable[2][field])
   
