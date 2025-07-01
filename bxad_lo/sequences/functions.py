@@ -32,6 +32,5 @@ def get_bx_sequences(data: ak.Array, length: int = 2):
     number of elements (-1) of each tuple. We have to and-reduce each tuple.
     """
     masks_reduced = reduce_and_tuple_array(masks)
-    data = ak.with_field(data, sequences[masks_reduced], where=f"seq")
 
-    return data
+    return sequences[masks_reduced]

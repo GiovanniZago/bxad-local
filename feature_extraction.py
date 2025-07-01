@@ -74,39 +74,63 @@ if __name__ == "__main__":
     """
     Find sequences
     """
-    data_gpo = sequences.get_bx_sequences(data_gpo, length=3)
+    length = 3
+    seq = sequences.get_bx_sequences(data_gpo, length=length)
     print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
 
     """
     Restructure sequences, making them lists and not tuples
     """
-    seq = ak.to_list(data_gpo.seq)
-    seq_lists = [list(map(lambda tp: list(tp), ls)) for ls in seq]
+    seq_tuple_lists = ak.to_list(seq)
+    seq_lists = [list(map(lambda tp: list(tp), ls)) for ls in seq_tuple_lists]
+
     seq_array = ak.Array(seq_lists)
-    data_gpo = ak.with_field(data_gpo, seq_array, where="seq_array")
 
     print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB") 
 
 
     """ 
-    Flatten sequences and keep for each orbit only the bxs
-    that belong to seq_flatten
+    Flatten sequences per orbit
     """
     bx = ak.to_list(data_gpo.bx)
-    seq_flatten = ak.to_list(ak.flatten(data_gpo.seq_array, axis=2))
+    seq_flatten = ak.to_list(ak.flatten(seq_array, axis=2))
 
-    # remove fields to allow for slicing
-    data_gpo = ak.without_field(data_gpo, ["seq"])
-    data_gpo = ak.without_field(data_gpo, ["seq_array"])
-    data_gpo = ak.without_field(data_gpo, ["orbit"])
-    data_gpo = ak.without_field(data_gpo, ["num_stubs"])
+    """
+    Define an unique index for each sequence
+    """
+    seq_index = []
+    last_idx = 0
 
+    for seq_orbit_list in seq_flatten:
+        num_seq = len(seq_orbit_list) // length
+        seq_index.append([x for x in range(last_idx, last_idx + num_seq) for _ in range(length)])
+        last_idx += num_seq
+
+    seq_index_array = ak.Array(seq_index)
+
+    """
+    Keep only selected fields to allow for slicing
+    """
+    fields_to_keep = [f for f in data_gpo.fields if f not in ["orbit", "num_stubs"]]
+    data_gpo_sliceable = data_gpo[fields_to_keep]
+
+    """
+    Define a mask that is True on the bxs
+    that belong to seq_flatten. Then filter the 
+    whole array in order to keep data only from these
+    bxs
+    """
     bx_seq_mask = [[True if el in seqls else False for el in bxls] for bxls, seqls in zip(bx, seq_flatten)]
     bx_seq_mask_array = ak.Array(bx_seq_mask)
-    data_gpo = data_gpo[bx_seq_mask_array]
+    data_gpo_sliceable = data_gpo_sliceable[bx_seq_mask_array]
+
+    """
+    Now add the index array
+    """
+    data_gpo_sliceable = ak.with_field(data_gpo_sliceable, seq_index_array, where="seq_index")
 
     print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB") 
 
-    for field in data_gpo.fields:
-        print(f"{field}: ", data_gpo[0][field])
+    for field in data_gpo_sliceable.fields:
+        print(f"{field}: ", data_gpo_sliceable[2][field])
   
