@@ -77,12 +77,36 @@ if __name__ == "__main__":
     data_gpo = sequences.get_bx_sequences(data_gpo, length=3)
     print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
 
-    """ 
-    Flatten sequences
     """
-    print(data_gpo.type.show())
-    # seq_flatten = ak.flatten(data_gpo.seq, axis=2)
-    # data_gpo = ak.with_field(data_gpo, seq_flatten, where=f"seq_flatten")
+    Restructure sequences, making them lists and not tuples
+    """
+    seq = ak.to_list(data_gpo.seq)
+    seq_lists = [list(map(lambda tp: list(tp), ls)) for ls in seq]
+    seq_array = ak.Array(seq_lists)
+    data_gpo = ak.with_field(data_gpo, seq_array, where="seq_array")
 
-    # for field in data_gpo.fields:
-    #     print(f"{field}: ", data_gpo[0][field])
+    print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB") 
+
+
+    """ 
+    Flatten sequences and keep for each orbit only the bxs
+    that belong to seq_flatten
+    """
+    bx = ak.to_list(data_gpo.bx)
+    seq_flatten = ak.to_list(ak.flatten(data_gpo.seq_array, axis=2))
+
+    # remove fields to allow for slicing
+    data_gpo = ak.without_field(data_gpo, ["seq"])
+    data_gpo = ak.without_field(data_gpo, ["seq_array"])
+    data_gpo = ak.without_field(data_gpo, ["orbit"])
+    data_gpo = ak.without_field(data_gpo, ["num_stubs"])
+
+    bx_seq_mask = [[True if el in seqls else False for el in bxls] for bxls, seqls in zip(bx, seq_flatten)]
+    bx_seq_mask_array = ak.Array(bx_seq_mask)
+    data_gpo = data_gpo[bx_seq_mask_array]
+
+    print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB") 
+
+    for field in data_gpo.fields:
+        print(f"{field}: ", data_gpo[0][field])
+  
