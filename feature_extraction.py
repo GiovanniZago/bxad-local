@@ -39,20 +39,6 @@ if __name__ == "__main__":
     print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
 
     """
-    Global data info
-    """
-    num_tot_orbits = np.ravel(events_metadata["nOrbits"].arrays())[0]
-
-    t_daq = num_tot_orbits * 25e-9 * 3564
-    print(f"T daq: {t_daq:.3f} s")
-
-    num_tot_bx = ak.num(data.bx, axis=0)
-    print(f"Tot bx: {num_tot_bx}")
-
-    effective_rate = num_tot_bx / t_daq
-    print(f"Effective rate: {(effective_rate / 1e6):.2f} MHz")
-
-    """
     Auxiliary data on colliding bunches
     """
     cbx_mask = utils.get_fill_data("25ns_2352b_2340_2004_2133_108bpi_24inj.json")
@@ -75,90 +61,78 @@ if __name__ == "__main__":
     Find sequences
     """
     length = 3
-    seq = sequences.get_bx_sequences(data_gpo, length=length)
+    seq_record_array = sequences.get_bx_sequences(data_gpo, length=length)
     print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
 
     """
     Restructure sequences, making them lists and not tuples
     """
-    seq_tuple_lists = ak.to_list(seq)
-    seq_lists = [list(map(lambda tp: list(tp), ls)) for ls in seq_tuple_lists]
+    seq_tuple_lists = ak.to_list(seq_record_array)
+    seq = [list(map(lambda tp: list(tp), ls)) for ls in seq_tuple_lists]
 
-    seq_array = ak.Array(seq_lists)
-
-    print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB") 
-
-
-    """ 
-    Flatten sequences per orbit
-    """
-    seq_flatten = ak.to_list(ak.flatten(seq_array, axis=2))
+    print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
 
     """
-    Define an unique index for each sequence
-    """
-    seq_index = []
-    last_idx = 0
+    Now for each bx sequence we want to extract, 
+    on a per-orbit basis, the indexes of their 
+    bxs in the full bx array. 
 
-    for seq_orbit_list in seq_flatten:
-        num_seq = len(seq_orbit_list) // length
-        seq_index.append([x for x in range(last_idx, last_idx + num_seq) for _ in range(length)])
-        last_idx += num_seq
+    Eg:
+    bx_in_orbit = [1, 2, 3, 5, 7, 8, 9, 10]
 
-    seq_index_array = ak.Array(seq_index)
+    seq_in_orbit = [[1, 2, 3], [8, 9, 10]]
 
-    """
-    Keep only selected fields to allow for slicing
-    """
-    fields_to_keep = [f for f in data_gpo.fields if f not in ["orbit", "num_stubs"]]
-    data_gpo_sliceable = data_gpo[fields_to_keep]
+    -> we want to get
+    [[0, 1, 2], [5, 6, 7]]
 
-    """
-    Define a mask that is True on the bxs
-    that belong to seq_flatten. Then filter the 
-    whole array in order to keep data only from these
-    bxs
+    Such list, for each orbit, is stored
+    inside seq_indexes
     """
     bx = ak.to_list(data_gpo.bx)
-    seq_flatten_bx_counts = [{x: seqls.count(x) for x in seqls} for seqls in seq_flatten]
-    bx_counts = [{x: bxls.count(x) for x in bxls} for bxls in bx]
 
-    selected_bx_with_reps = [
-        {
-            k: y[k] if x[k] != y[k] else x[k] for k in x.keys() & y.keys() 
-        }
-        for x, y in zip(bx_counts, seq_flatten_bx_counts)
+    def find_indexes(array, array_elements):
+        result = []
+        for target in array_elements:
+            length = len(target)
+            for i in range(len(array) - length + 1):
+                if array[i:i + length] == target:
+                    result.append(list(range(i, i + length)))
+                    break  
+        return result
+    
+    seq_indexes = [
+        find_indexes(bx_list, bx_seq_list) 
+        for bx_list, bx_seq_list 
+        in zip(bx, seq)
     ]
 
-    print(selected_bx_with_reps[2])
-
+    """
+    Now that we have seq_indexes we want 
+    to slice each feature vector, on a per-orbit
+    basis, in order to keep the values of the
+    features only for the bxs contained inside
+    the sequences
+    """
     data_gpo_dict = data_gpo.to_list()
 
-    for orbit_idx, (sbr_dict, record_dict) in enumerate(zip(selected_bx_with_reps, data_gpo_dict)):
-        for k in record_dict:
-            if k not in ["bx", "orbit"]:
-                record_dict[k] = [
-                    record_dict[k][i]
-                    for i, val in enumerate(record_dict["bx"])
-                    if val in sbr_dict
-                    for _ in range(sbr_dict[val])
-                ]
+    for indexes, orbit_dict in zip(seq_indexes, data_gpo_dict):
+        for key, values in orbit_dict.items():
+            if key == "orbit":
+                continue
 
-        record_dict["bx"] = [el for el in record_dict["bx"] & sbr_dict.keys() for _ in range(sbr_dict[el])]
-    
-    print(data_gpo_dict[2])
+            arr = ak.Array(values)
+            index_array = ak.Array(indexes)
+            orbit_dict[key] = [ak.to_list(arr[idxs]) for idxs in index_array]
 
-    # bx_seq_mask = [[True if el in seqls else False for el in bxls] for bxls, seqls in zip(bx_with_reps, seq_flatten)]
-    # bx_seq_mask_array = ak.Array(bx_seq_mask)
-    # data_gpo_sliceable = data_gpo_sliceable[bx_seq_mask_array]
+    data_gpo = ak.Array(data_gpo_dict)
 
-    # """
-    # Now add the index array
-    # """
-    # data_gpo_sliceable = ak.with_field(data_gpo_sliceable, seq_index_array, where="seq_index")
+    data_gpo["orbit"] = ak.broadcast_arrays(data_gpo["bx"], data_gpo["orbit"], depth_limit=2)[-1]
 
-    # print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB") 
+    data_sequences = ak.zip(
+        {
+            field: ak.flatten(data_gpo[field]) for field in data_gpo.fields 
+        },
+        depth_limit=1
+    )
 
-    # for field in data_gpo_sliceable.fields:
-    #     print(f"{field}: ", data_gpo_sliceable[2][field])
-  
+    print(data_sequences[0])
