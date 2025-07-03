@@ -7,6 +7,7 @@ import awkward as ak
 
 import os
 import psutil
+import pprint
 
 if __name__ == "__main__":
     """
@@ -115,18 +116,28 @@ if __name__ == "__main__":
     """
     data_gpo_dict = data_gpo.to_list()
 
+    last_seq_idx = 0
     for indexes, orbit_dict in zip(seq_indexes, data_gpo_dict):
+        index_array = ak.Array(indexes)
+        num_seq_in_orbit = ak.num(index_array, axis=0).item()
+
         for key, values in orbit_dict.items():
             if key == "orbit":
                 continue
 
             arr = ak.Array(values)
-            index_array = ak.Array(indexes)
             orbit_dict[key] = [ak.to_list(arr[idxs]) for idxs in index_array]
 
-    data_gpo = ak.Array(data_gpo_dict)
+        orbit_dict["seq_idx"] = list(range(last_seq_idx, last_seq_idx + num_seq_in_orbit))
+        last_seq_idx += num_seq_in_orbit
 
-    data_gpo["orbit"] = ak.broadcast_arrays(data_gpo["bx"], data_gpo["orbit"], depth_limit=2)[-1]
+    data_gpo = ak.Array(data_gpo_dict)
+    data_gpo["orbit"] = ak.broadcast_arrays(data_gpo["bx"], data_gpo["orbit"])[-1]
+    data_gpo["seq_idx"] = ak.broadcast_arrays(data_gpo["bx"], data_gpo["seq_idx"])[-1]
+
+    print("DATA_GPO")
+    for record in data_gpo[0:5]:
+        pprint.pprint(record.to_list())
 
     data_sequences = ak.zip(
         {
@@ -135,4 +146,11 @@ if __name__ == "__main__":
         depth_limit=1
     )
 
-    print(data_sequences[0])
+    print("\n\n\nDATA_SEQUENCES")
+    for record in data_sequences[0:5]:
+        pprint.pprint(record.to_list())
+
+    # file_out = uproot.recreate(f"output_1000_seq{length}.root")
+    # file_out["Sequences"] = {field: data_sequences[field] for field in data_sequences.fields}
+    # file_out["SequencesMetadata"] = {"sequence_length": length}
+    
