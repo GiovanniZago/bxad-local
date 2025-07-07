@@ -22,19 +22,21 @@ if __name__ == "__main__":
     events_metadata = uproot.open(config.DATA_PATH + ":" + config.METADATA_TTREE)
 
     data = events.arrays(
-        ["orbit", "bx", "num_stubs", "quality", "phi_rel", "phi_bend", "eta_hits", "eta_qual", "wheel", "sector", "station"], 
+        ["orbit", "bx", "num_stubs", "L1BMTFStub_hwQual", "L1BMTFStub_hwPhi", 
+         "L1BMTFStub_hwPhiB", "L1BMTFStub_hwEta", "L1BMTFStub_hwQEta", 
+         "L1BMTFStub_wheel", "L1BMTFStub_sector", "L1BMTFStub_station"], 
         aliases={
             "orbit": "orbitNumber", 
             "bx": "bunchCrossing", 
             "num_stubs": "nL1BMTFStub", 
-            "quality": "L1BMTFStub_hwQual", 
-            "phi_rel": "L1BMTFStub_hwPhi", 
-            "phi_bend": "L1BMTFStub_hwPhiB", 
-            "eta_hits": "L1BMTFStub_hwEta", 
-            "eta_qual": "L1BMTFStub_hwQual", 
-            "wheel": "L1BMTFStub_wheel", 
-            "sector": "L1BMTFStub_sector", 
-            "station": "L1BMTFStub_station"
+            "L1BMTFStub_hwQual": "L1BMTFStub_hwQual", 
+            "L1BMTFStub_hwPhi": "L1BMTFStub_hwPhi", 
+            "L1BMTFStub_hwPhiB": "L1BMTFStub_hwPhiB", 
+            "L1BMTFStub_hwEta": "L1BMTFStub_hwEta", 
+            "L1BMTFStub_hwQEta": "L1BMTFStub_hwQEta", 
+            "L1BMTFStub_wheel": "L1BMTFStub_wheel", 
+            "L1BMTFStub_sector": "L1BMTFStub_sector", 
+            "L1BMTFStub_station": "L1BMTFStub_station"
         }
     )
     print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
@@ -61,7 +63,7 @@ if __name__ == "__main__":
     """
     Find sequences
     """
-    length = 3
+    length = 4
     seq_record_array = sequences.get_bx_sequences(data_gpo, length=length)
     print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
 
@@ -139,18 +141,37 @@ if __name__ == "__main__":
     for record in data_gpo[0:5]:
         pprint.pprint(record.to_list())
 
+    selected_fields = ["bx", "num_stubs", "orbit", "seq_idx"]
+
     data_sequences = ak.zip(
         {
-            field: ak.flatten(data_gpo[field]) for field in data_gpo.fields 
-        },
-        depth_limit=1
+            field: ak.flatten(data_gpo[field], axis=-1) for field in selected_fields
+        }
     )
+
+    for field in data_gpo.fields:
+        if field in selected_fields:
+            continue
+
+        data_sequences[field] = ak.flatten(data_gpo[field], axis=-2)
+
+    data_sequences = ak.flatten(data_sequences)
 
     print("\n\n\nDATA_SEQUENCES")
     for record in data_sequences[0:5]:
         pprint.pprint(record.to_list())
 
-    # file_out = uproot.recreate(f"output_1000_seq{length}.root")
-    # file_out["Sequences"] = {field: data_sequences[field] for field in data_sequences.fields}
-    # file_out["SequencesMetadata"] = {"sequence_length": length}
-    
+    """
+    Fix the data format to match 
+    the silly Uproot requirements
+    """
+
+    L1BMTFStub = ak.zip({name[11:]: array for name, array in zip(ak.fields(data_sequences), ak.unzip(data_sequences)) if name.startswith("L1BMTFStub_")})
+
+    file_out = uproot.recreate(f"output_1000_seq{length}.root")
+    file_out["L1BMTFStubSequences"] = {
+        "L1BMTFStub": L1BMTFStub, 
+        "orbitNumber": data_sequences["orbit"], 
+        "bunchCrossing": data_sequences["bx"], 
+        "sequenceIndex": data_sequences["seq_idx"]
+    }

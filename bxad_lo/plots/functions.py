@@ -58,7 +58,9 @@ def plot_bin_counts(counts_dict: dict, **kwargs):
 
     plt.figure(figsize=(12,10))
     hep.cms.label(label="Private Work", data=True, rlabel="Level-1 Trigger Scouring 2024 (13.6 TeV)", fontsize=18)
-    plt.step(xvalues, yvalues)
+
+    width = np.min(np.diff(xvalues))
+    plt.bar(x=xvalues, height=yvalues, width=width, align="edge")
     plt.yscale(yscale)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)

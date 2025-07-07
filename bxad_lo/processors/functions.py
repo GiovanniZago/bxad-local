@@ -7,15 +7,13 @@ def get_multiplicity_counts(data: ak.Array):
 
     return dict(zip(mults, counts))
 
-def get_bin_counts(data: ak.Array, field: str, nbins: int = 50):
-    assert field in data.fields, "Specified field not found in data.fields"
-
-    min_data = ak.min(data[field]).astype(np.float32)
-    max_data = ak.max(data[field]).astype(np.float32)
+def get_bin_counts(data: ak.Array, nbins: int = 50):
+    min_data = ak.min(data).astype(np.float32)
+    max_data = ak.max(data).astype(np.float32)
 
     h = hist.Hist(
             hist.axis.Regular(nbins, min_data, max_data, flow=False)
-        ).fill(data[field])
+        ).fill(data)
 
     counts_dict = dict(zip(h.axes[0].edges[:-1], h.values()))
 
