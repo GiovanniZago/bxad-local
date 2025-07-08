@@ -188,5 +188,6 @@ pyrightconfig.json
 
 # custom
 *.root
+*.pkl
 
 # End of https://www.toptal.com/developers/gitignore/api/python,jupyternotebooks
