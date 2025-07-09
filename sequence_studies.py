@@ -56,7 +56,7 @@ if __name__ == "__main__":
     data_seq = sequences.get_bx_sequences(data_gpo, length=2)
     print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
     
-    num_seq_per_orbit = ak.num(data_seq.seq, axis=1)
+    num_seq_per_orbit = ak.num(data_seq, axis=1)
     num_seq_mulcounts = processors.get_multiplicity_counts(num_seq_per_orbit)
     print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
 
@@ -67,7 +67,7 @@ if __name__ == "__main__":
         "yscale": "log", 
         "name": "2seq_mulcounts"
     }
-    plots.plot_multiplicity_counts(num_seq_mulcounts, **plot_options)
+    plots.plot_bin_counts(num_seq_mulcounts, **plot_options)
     
 
     """ 
@@ -88,9 +88,9 @@ if __name__ == "__main__":
     data_seq = sequences.get_bx_sequences(data_gpo, length=2)
     print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
     
-    num_seq_per_orbit = ak.num(data_seq.seq, axis=1)
+    num_seq_per_orbit = ak.num(data_seq, axis=1)
     num_seq_mulcounts = processors.get_multiplicity_counts(num_seq_per_orbit)
-    seq_tot_counts["seq2"] = sum([key * num_seq_mulcounts[key] for key in num_seq_mulcounts])
+    seq_tot_counts["2"] = sum([key * num_seq_mulcounts[key] for key in num_seq_mulcounts])
     print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
 
     plot_options = {
@@ -100,15 +100,15 @@ if __name__ == "__main__":
         "yscale": "log", 
         "name": "2seq_mulcounts_cb_stubs"
     }
-    plots.plot_multiplicity_counts(num_seq_mulcounts, **plot_options)
+    plots.plot_bin_counts(num_seq_mulcounts, **plot_options)
 
     # 3-sequences
     data_seq = sequences.get_bx_sequences(data_gpo, length=3)
     print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
     
-    num_seq_per_orbit = ak.num(data_seq.seq, axis=1)
+    num_seq_per_orbit = ak.num(data_seq, axis=1)
     num_seq_mulcounts = processors.get_multiplicity_counts(num_seq_per_orbit)
-    seq_tot_counts["seq3"] = sum([key * num_seq_mulcounts[key] for key in num_seq_mulcounts])
+    seq_tot_counts["3"] = sum([key * num_seq_mulcounts[key] for key in num_seq_mulcounts])
     print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
 
     plot_options = {
@@ -118,15 +118,15 @@ if __name__ == "__main__":
         "yscale": "log", 
         "name": "3seq_mulcounts_cb_stubs"
     }
-    plots.plot_multiplicity_counts(num_seq_mulcounts, **plot_options)
+    plots.plot_bin_counts(num_seq_mulcounts, **plot_options)
 
     # 4-sequences
     data_seq = sequences.get_bx_sequences(data_gpo, length=4)
     print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
     
-    num_seq_per_orbit = ak.num(data_seq.seq, axis=1)
+    num_seq_per_orbit = ak.num(data_seq, axis=1)
     num_seq_mulcounts = processors.get_multiplicity_counts(num_seq_per_orbit)
-    seq_tot_counts["seq4"] = sum([key * num_seq_mulcounts[key] for key in num_seq_mulcounts])
+    seq_tot_counts["4"] = sum([key * num_seq_mulcounts[key] for key in num_seq_mulcounts])
     print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
 
     plot_options = {
@@ -136,15 +136,15 @@ if __name__ == "__main__":
         "yscale": "log", 
         "name": "4seq_mulcounts_cb_stubs"
     }
-    plots.plot_multiplicity_counts(num_seq_mulcounts, **plot_options)
+    plots.plot_bin_counts(num_seq_mulcounts, **plot_options)
 
     # 5-sequences
     data_seq = sequences.get_bx_sequences(data_gpo, length=5)
     print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
     
-    num_seq_per_orbit = ak.num(data_seq.seq, axis=1)
+    num_seq_per_orbit = ak.num(data_seq, axis=1)
     num_seq_mulcounts = processors.get_multiplicity_counts(num_seq_per_orbit)
-    seq_tot_counts["seq5"] = sum([key * num_seq_mulcounts[key] for key in num_seq_mulcounts])
+    seq_tot_counts["5"] = sum([key * num_seq_mulcounts[key] for key in num_seq_mulcounts])
     print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
 
     plot_options = {
@@ -154,7 +154,97 @@ if __name__ == "__main__":
         "yscale": "log", 
         "name": "5seq_mulcounts_cb_stubs"
     }
-    plots.plot_multiplicity_counts(num_seq_mulcounts, **plot_options)
+    plots.plot_bin_counts(num_seq_mulcounts, **plot_options)
+
+    # 6-sequences
+    data_seq = sequences.get_bx_sequences(data_gpo, length=6)
+    print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
+    
+    num_seq_per_orbit = ak.num(data_seq, axis=1)
+    num_seq_mulcounts = processors.get_multiplicity_counts(num_seq_per_orbit)
+    seq_tot_counts["6"] = sum([key * num_seq_mulcounts[key] for key in num_seq_mulcounts])
+    print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
+
+    plot_options = {
+        "kind": "step",
+        "xlabel": "6-sequence multiplicity",
+        "ylabel": "Orbit counts",
+        "yscale": "log", 
+        "name": "6seq_mulcounts_cb_stubs"
+    }
+    plots.plot_bin_counts(num_seq_mulcounts, **plot_options)
+
+    # 7-sequences
+    data_seq = sequences.get_bx_sequences(data_gpo, length=7)
+    print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
+    
+    num_seq_per_orbit = ak.num(data_seq, axis=1)
+    num_seq_mulcounts = processors.get_multiplicity_counts(num_seq_per_orbit)
+    seq_tot_counts["7"] = sum([key * num_seq_mulcounts[key] for key in num_seq_mulcounts])
+    print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
+
+    plot_options = {
+        "kind": "step",
+        "xlabel": "7-sequence multiplicity",
+        "ylabel": "Orbit counts",
+        "yscale": "log", 
+        "name": "7seq_mulcounts_cb_stubs"
+    }
+    plots.plot_bin_counts(num_seq_mulcounts, **plot_options)
+
+    # 8-sequences
+    data_seq = sequences.get_bx_sequences(data_gpo, length=8)
+    print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
+    
+    num_seq_per_orbit = ak.num(data_seq, axis=1)
+    num_seq_mulcounts = processors.get_multiplicity_counts(num_seq_per_orbit)
+    seq_tot_counts["8"] = sum([key * num_seq_mulcounts[key] for key in num_seq_mulcounts])
+    print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
+
+    plot_options = {
+        "kind": "step",
+        "xlabel": "8-sequence multiplicity",
+        "ylabel": "Orbit counts",
+        "yscale": "log", 
+        "name": "8seq_mulcounts_cb_stubs"
+    }
+    plots.plot_bin_counts(num_seq_mulcounts, **plot_options)
+
+    # 9-sequences
+    data_seq = sequences.get_bx_sequences(data_gpo, length=9)
+    print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
+    
+    num_seq_per_orbit = ak.num(data_seq, axis=1)
+    num_seq_mulcounts = processors.get_multiplicity_counts(num_seq_per_orbit)
+    seq_tot_counts["9"] = sum([key * num_seq_mulcounts[key] for key in num_seq_mulcounts])
+    print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
+
+    plot_options = {
+        "kind": "step",
+        "xlabel": "9-sequence multiplicity",
+        "ylabel": "Orbit counts",
+        "yscale": "log", 
+        "name": "9seq_mulcounts_cb_stubs"
+    }
+    plots.plot_bin_counts(num_seq_mulcounts, **plot_options)
+
+    # 10-sequences
+    data_seq = sequences.get_bx_sequences(data_gpo, length=10)
+    print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
+    
+    num_seq_per_orbit = ak.num(data_seq, axis=1)
+    num_seq_mulcounts = processors.get_multiplicity_counts(num_seq_per_orbit)
+    seq_tot_counts["10"] = sum([key * num_seq_mulcounts[key] for key in num_seq_mulcounts])
+    print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
+
+    plot_options = {
+        "kind": "step",
+        "xlabel": "10-sequence multiplicity",
+        "ylabel": "Orbit counts",
+        "yscale": "log", 
+        "name": "10seq_mulcounts_cb_stubs"
+    }
+    plots.plot_bin_counts(num_seq_mulcounts, **plot_options)
 
     # plot total multiplicity per sequence length
     plot_options = {
