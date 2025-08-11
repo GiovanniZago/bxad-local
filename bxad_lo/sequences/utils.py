@@ -4,12 +4,11 @@ import numpy as np
 import operator
 from functools import reduce
 
-def orbit_aggregator(data: ak.Array):
-    assert "orbit" in data.fields
-    assert "bx" in data.fields
-    
-    data_sorted = data[ak.argsort(data.orbit)]
-    orbit_reps = ak.run_lengths(data_sorted.orbit)
+def orbit_aggregator(data: ak.Array, **kwargs):
+    orbit_field = kwargs.get("orbit_field", "orbit")
+
+    data_sorted = data[ak.argsort(data[orbit_field])]
+    orbit_reps = ak.run_lengths(data_sorted[orbit_field])
 
     """
     unflatten data
@@ -22,8 +21,8 @@ def orbit_aggregator(data: ak.Array):
     """
     group by orbit (gpo)
     """
-    zip_dict = {key: data_uf[key] for key in data_uf.fields if key != "orbit"}
-    zip_dict["orbit"] = data_uf["orbit"][:,0]
+    zip_dict = {key: data_uf[key] for key in data_uf.fields if key != orbit_field}
+    zip_dict[orbit_field] = data_uf[orbit_field][:,0]
     data_gpo = ak.zip(zip_dict, depth_limit=1)
 
     return data_gpo

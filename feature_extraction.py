@@ -63,7 +63,7 @@ if __name__ == "__main__":
     """
     Find sequences
     """
-    length = 4
+    length = 5
     seq_record_array = sequences.get_bx_sequences(data_gpo, length=length)
     print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
 

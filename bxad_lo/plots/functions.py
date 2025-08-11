@@ -31,6 +31,7 @@ def plot_multiplicity_counts(counts_dict: dict, **kwargs):
 
         case "step":
             plt.step(xvalues, yvalues)
+            
 
     plt.yscale(yscale)
     plt.xlabel(xlabel)
