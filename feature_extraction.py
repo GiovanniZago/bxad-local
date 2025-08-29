@@ -9,6 +9,9 @@ import os
 import psutil
 import pprint
 
+COLLIDING_BUNCHES = False
+LENGTH = 2
+
 if __name__ == "__main__":
     """
     Setup global variables and read data
@@ -28,15 +31,7 @@ if __name__ == "__main__":
         aliases={
             "orbit": "orbitNumber", 
             "bx": "bunchCrossing", 
-            "num_stubs": "nL1BMTFStub", 
-            "L1BMTFStub_hwQual": "L1BMTFStub_hwQual", 
-            "L1BMTFStub_hwPhi": "L1BMTFStub_hwPhi", 
-            "L1BMTFStub_hwPhiB": "L1BMTFStub_hwPhiB", 
-            "L1BMTFStub_hwEta": "L1BMTFStub_hwEta", 
-            "L1BMTFStub_hwQEta": "L1BMTFStub_hwQEta", 
-            "L1BMTFStub_wheel": "L1BMTFStub_wheel", 
-            "L1BMTFStub_sector": "L1BMTFStub_sector", 
-            "L1BMTFStub_station": "L1BMTFStub_station"
+            "num_stubs": "nL1BMTFStub"
         }
     )
     print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
@@ -52,7 +47,13 @@ if __name__ == "__main__":
     """
     data_filtered = data[data.num_stubs >= 1]
     mask = np.isin(data_filtered.bx, cbx_array)
-    data_filtered = data_filtered[mask]
+
+    if COLLIDING_BUNCHES:
+        data_filtered = data_filtered[mask]
+
+    else:
+        mask = np.invert(mask)
+        data_filtered = data_filtered[mask]
 
     """
     Restructure data
@@ -63,8 +64,7 @@ if __name__ == "__main__":
     """
     Find sequences
     """
-    length = 5
-    seq_record_array = sequences.get_bx_sequences(data_gpo, length=length)
+    seq_record_array = sequences.get_bx_sequences(data_gpo, length=LENGTH)
     print(f"Current memory usage: {process.memory_info().rss / 1e6:.3f} MB")
 
     """
@@ -167,8 +167,14 @@ if __name__ == "__main__":
     """
 
     L1BMTFStub = ak.zip({name[11:]: array for name, array in zip(ak.fields(data_sequences), ak.unzip(data_sequences)) if name.startswith("L1BMTFStub_")})
+    
+    if COLLIDING_BUNCHES:
+        file_out_name = f"output_1000_seq{LENGTH}.root"
 
-    file_out = uproot.recreate(f"output_1000_seq{length}.root")
+    else:
+        file_out_name = f"output_1000_seq{LENGTH}_nc.root"
+
+    file_out = uproot.recreate(file_out_name)
     file_out["L1BMTFStubSequences"] = {
         "L1BMTFStub": L1BMTFStub, 
         "orbitNumber": data_sequences["orbit"], 
